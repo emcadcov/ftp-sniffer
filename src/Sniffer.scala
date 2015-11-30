@@ -13,14 +13,14 @@ object Sniffer {
   val PacketWaitingTimeMs = 512
   val PacketsLoopCount = -1
   val User = "xuserx"
-  val StringFilter = "port ftp"//"port ftp or ftp-data"
+  val StringFilter = "port ftp or ftp-data"
   val Optimize = 1
 
   def main(args: Array[String]) {
 
     val errBuf: java.lang.StringBuilder = new java.lang.StringBuilder
 
-	  // получение имени устройства
+    // получение имени устройства
     val device = lookupDev(errBuf)
     println(s"Open device $device...")
 
