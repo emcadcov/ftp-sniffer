@@ -6,20 +6,21 @@ import org.jnetpcap.nio.JNumber
 import org.jnetpcap.packet.{Payload, PcapPacket, PcapPacketHandler, format}
 import org.jnetpcap.protocol.network.Ip4
 
-object Main {
+object Sniffer {
 
   val MaxBytesToCapture = 2048
   val ReceiptAllPackets = 1
   val PacketWaitingTimeMs = 512
   val PacketsLoopCount = -1
   val User = "xuserx"
-  val StringFilter = "port ftp or ftp-data"
+  val StringFilter = "port ftp"//"port ftp or ftp-data"
   val Optimize = 1
 
   def main(args: Array[String]) {
 
     val errBuf: java.lang.StringBuilder = new java.lang.StringBuilder
-    // получение имени устройства
+
+	  // получение имени устройства
     val device = lookupDev(errBuf)
     println(s"Open device $device...")
 
@@ -58,11 +59,16 @@ object Main {
   def getPacketHandler = new PcapPacketHandler[String] {
 
     override def nextPacket(packet: PcapPacket, user: String): Unit = {
+      // пакеты, которые почему-то прошли фильтр, но не содержат payload, отсеиваются
+      val data: String = findContent(packet) match {
+	      case Some(d)  => d
+	      case None     => return
+      }
 
       println(new Date(packet.getCaptureHeader.timestampInMillis()) + "\n")
       println(findLength(packet) + "\n")
       println(findIp(packet) + "\n")
-      println(findContent(packet))
+      println(data)
       println("-----------------------------")
 
     }
@@ -71,24 +77,21 @@ object Main {
     def findIp(packet: PcapPacket): String = {
       val ip = new Ip4
       if (packet.hasHeader(ip)) {
-        val destinationIP = ip.destination()
-        val sourceIP = ip.source()
-        "Destination IP: " + format.FormatUtils.ip(destinationIP) +
-          "\nSource IP: " + format.FormatUtils.ip(sourceIP)
+        "Destination IP: " + format.FormatUtils.ip(ip.destination) +
+          "\nSource IP: " + format.FormatUtils.ip(ip.source)
       } else {
         "Unknown IP"
       }
     }
 
     // получение содержимого пакета
-    def findContent(packet: PcapPacket): String = {
+    def findContent(packet: PcapPacket): Option[String] = {
 
       val payload = new Payload
       if (packet.hasHeader(payload)) {
-        val content = payload.getByteArray(0, payload.getLength)
-        "Info:\n" + new String(content.map(_.toChar))
+	      Some("Info:\n" + new String(payload.getByteArray(0, payload.getLength).map(_.toChar)))
       } else {
-        "No info"
+	      None
       }
     }
 
